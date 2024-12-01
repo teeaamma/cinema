@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Сеанс {{ session.movie.title }}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-md-6 d-flex justify-content-center">
+      <img 
+        src="{{ session.movie.poster.url }}" 
+        alt="{{ session.movie.title }}" 
+        style="max-width: 100%; height: 600px; object-fit: cover; border: 1px solid #ddd; border-radius: 8px;">
+    </div>
+    <div class="col-md-6">
+      <h2>{{ session.movie.title }}</h2>
+      <p><strong>Описание:</strong> {{ session.movie.description }}</p>
+      <p><strong>Длительность:</strong> {{ session.movie.duration }} минут</p>
+      <p><strong>Начало:</strong> {{ session.start_time|date:"d E Y H:i" }}</p>
+      <p><strong>Зал:</strong> {{ session.hall.name }}</p>
+
+      <!-- Количество свободных мест -->
+      <p><strong>Свободные места:</strong> {{ session.get_available_seats|length }}</p>
+
+      <!-- Проверяем, авторизован ли пользователь -->
+      {% if user.is_authenticated %}
+        <!-- Проверяем, есть ли доступные места -->
+        {% if session.get_available_seats|length > 0 %}
+          <!-- Форма для бронирования -->
+          <h3>Забронировать место</h3>
+          <form method="post">
+            {% csrf_token %}
+            
+            <!-- Сетка мест -->
+            <div class="seat-map">
+              {% for seat in session.seats.all %}
+                <div class="seat-container">
+                  {% if seat.is_reserved %}
+                    <button type="button" class="seat reserved" disabled>Место {{ seat.number }}</button>
+                  {% else %}
+                    <button type="button" class="seat available" data-seat="{{ seat.id }}" data-seat-number="{{ seat.number }}">Место {{ seat.number }}</button>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Скрытое поле для отправки выбранного места -->
+            <input type="hidden" name="seat" id="selected-seat-input">
+
+            <!-- Кнопка отправки (включается только если место выбрано) -->
+            <button type="submit" class="btn btn-primary mt-3" id="submit-button" disabled>Забронировать</button>
+          </form>
+        {% else %}
+          <!-- Если мест нет, выводим сообщение -->
+          <p>К сожалению, все места на этот сеанс уже заняты.</p>
+        {% endif %}
+      {% else %}
+        <!-- Если пользователь не авторизован, выводим сообщение -->
+        <p>Для бронирования мест необходимо <a href="{% url 'login' %}">войти</a> или <a href="{% url 'registration' %}">зарегистрироваться</a>.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Скрипты для динамического выбора места -->
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const seatButtons = document.querySelectorAll(".seat.available");
+    const selectedSeatInput = document.getElementById("selected-seat-input");
+    const submitButton = document.getElementById("submit-button");
+
+    seatButtons.forEach(function(button) {
+      button.addEventListener("click", function() {
+        const seatId = this.getAttribute("data-seat");
+        const seatNumber = this.getAttribute("data-seat-number");
+
+        // Записываем выбранное место в скрытое поле
+        selectedSeatInput.value = seatId;
+
+        // Включаем кнопку отправки
+        submitButton.disabled = false;
+
+        // Обновляем визуальное состояние (выбранное место)
+        seatButtons.forEach(function(btn) {
+          btn.classList.remove("selected");
+        });
+        this.classList.add("selected");
+      });
+    });
+  });
+</script>
+
+<!-- Стили для сетки мест -->
+<style>
+  .seat-map {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr); /* 10 мест в ряду */
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  .seat-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .seat {
+    padding: 10px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 16px;
+  }
+
+  .seat:hover {
+    background-color: #e0e0e0;
+  }
+
+  .seat.selected {
+    background-color: #4CAF50;
+    color: white;
+  }
+
+  .seat.reserved {
+    background-color: #f44336;
+    cursor: not-allowed;
+  }
+
+  #selected-seat {
+    font-weight: bold;
+  }
+</style>
+
+{% endblock %}

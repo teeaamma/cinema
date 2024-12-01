@@ -1,0 +1,11 @@
+<div class="card" style="width: 100%; height: 100%; padding-top: 10px;">
+  <!-- Увеличиваем высоту постера до 400px, сохраняя пропорции -->
+  <img src="{{ session.movie.poster.url }}" class="card-img-top movie-poster" alt="{{ session.movie.title }}" style="object-fit: contain; height: 400px;">
+  <div class="card-body d-flex flex-column justify-content-between" style="height: 100%;">
+    <h5 class="card-title">{{ session.movie.title }}</h5>
+    <p class="card-text">{{ session.movie.description|truncatechars:100 }}</p>
+    <p class="card-text">Начало: {{ session.start_time|date:"d E H:i" }}</p>
+    <p class="card-text">Свободные места: {{ session.get_available_seats|length }}</p>
+    <a href="{% url 'cinema:session_detail' session.id %}" class="btn btn-primary">Подробнее о сеансе</a>
+  </div>
+</div>
